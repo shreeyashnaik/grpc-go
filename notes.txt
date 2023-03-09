@@ -1,0 +1,44 @@
+HTTP 1.1                 vs         HTTP 2
+Uncompressed headers              Binary compressed
+One TCP conn/request              One TCP conn for multiple req/resp
+                                  Multiplexing (server-client parallel msgs over one TCP conn)
+                                  Server Push
+                                  SSL
+
+
+TYPES of API in GRPC
+
+service GreetService {
+  // 1. Unary (Client one -> Server one)
+  rpc Greet(GreetRequest) returns (GreetResponse) {};
+
+  // 2. Server streaming
+  rpc Greet(GreetRequest) returns (stream GreetResponse) {};
+
+  // 3. Client streaming
+  rpc Greet(stream GreetRequest) returns (GreetResponse) {};
+
+  // 4. Bi directional streaming
+  rpc Greet(stream GreetRequest) returns (stream GreetResponse) {};
+}
+
+
+
+SCALABILTY in GRPC:
+SERVER SIDE: Async (main thread is not blocked and server can handle multiple requests in parallel.)
+CLIENT: Freedom Async/Blocking
+
+Google: 10 B requests/sec using GRPC
+
+
+SECURITY in GRPC:
+Schema based serialization, 
+SSL certificates initializations, 
+Interceptors for Auth
+  
+
+GRPC                   vs              REST
+Protocol Buffers (strict type)       JSON (dynamic type)
+Streaming                            Unary
+Bi directional                       Client -> Server
+Free design                       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2   GET/POST/UPDATE/DELETE
