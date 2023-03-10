@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Calculator_Sum_FullMethodName = "/calculator.Calculator/Sum"
+	Calculator_Sum_FullMethodName    = "/calculator.Calculator/Sum"
+	Calculator_Primes_FullMethodName = "/calculator.Calculator/Primes"
 )
 
 // CalculatorClient is the client API for Calculator service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CalculatorClient interface {
 	Sum(ctx context.Context, in *SumRequest, opts ...grpc.CallOption) (*SumResponse, error)
+	Primes(ctx context.Context, in *PrimesRequest, opts ...grpc.CallOption) (Calculator_PrimesClient, error)
 }
 
 type calculatorClient struct {
@@ -46,11 +48,44 @@ func (c *calculatorClient) Sum(ctx context.Context, in *SumRequest, opts ...grpc
 	return out, nil
 }
 
+func (c *calculatorClient) Primes(ctx context.Context, in *PrimesRequest, opts ...grpc.CallOption) (Calculator_PrimesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Calculator_ServiceDesc.Streams[0], Calculator_Primes_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &calculatorPrimesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Calculator_PrimesClient interface {
+	Recv() (*PrimesResponse, error)
+	grpc.ClientStream
+}
+
+type calculatorPrimesClient struct {
+	grpc.ClientStream
+}
+
+func (x *calculatorPrimesClient) Recv() (*PrimesResponse, error) {
+	m := new(PrimesResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // CalculatorServer is the server API for Calculator service.
 // All implementations must embed UnimplementedCalculatorServer
 // for forward compatibility
 type CalculatorServer interface {
 	Sum(context.Context, *SumRequest) (*SumResponse, error)
+	Primes(*PrimesRequest, Calculator_PrimesServer) error
 	mustEmbedUnimplementedCalculatorServer()
 }
 
@@ -60,6 +95,9 @@ type UnimplementedCalculatorServer struct {
 
 func (UnimplementedCalculatorServer) Sum(context.Context, *SumRequest) (*SumResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Sum not implemented")
+}
+func (UnimplementedCalculatorServer) Primes(*PrimesRequest, Calculator_PrimesServer) error {
+	return status.Errorf(codes.Unimplemented, "method Primes not implemented")
 }
 func (UnimplementedCalculatorServer) mustEmbedUnimplementedCalculatorServer() {}
 
@@ -92,6 +130,27 @@ func _Calculator_Sum_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Calculator_Primes_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(PrimesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CalculatorServer).Primes(m, &calculatorPrimesServer{stream})
+}
+
+type Calculator_PrimesServer interface {
+	Send(*PrimesResponse) error
+	grpc.ServerStream
+}
+
+type calculatorPrimesServer struct {
+	grpc.ServerStream
+}
+
+func (x *calculatorPrimesServer) Send(m *PrimesResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Calculator_ServiceDesc is the grpc.ServiceDesc for Calculator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -104,6 +163,12 @@ var Calculator_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Calculator_Sum_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Primes",
+			Handler:       _Calculator_Primes_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "calculator.proto",
 }

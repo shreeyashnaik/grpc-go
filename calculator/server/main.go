@@ -34,3 +34,19 @@ func (s *Server) Sum(ctx context.Context, in *pb.SumRequest) (*pb.SumResponse, e
 		Ans: (in.Num1 + in.Num2),
 	}, nil
 }
+
+func (s *Server) Primes(in *pb.PrimesRequest, stream pb.Calculator_PrimesServer) error {
+	n := int(in.Num)
+	factor := 2
+	for n > 1 {
+		if n%factor == 0 {
+			n /= factor
+			stream.Send(&pb.PrimesResponse{
+				Factor: int32(factor),
+			})
+		} else {
+			factor += 1
+		}
+	}
+	return nil
+}

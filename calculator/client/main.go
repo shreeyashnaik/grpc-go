@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 
 	pb "github.com/shreeyashnaik/grpc-go/calculator/proto"
@@ -21,13 +22,34 @@ func main() {
 
 	c := pb.NewCalculatorClient(conn)
 
-	res, err := c.Sum(context.Background(), &pb.SumRequest{
-		Num1: 10,
-		Num2: 3,
+	// res, err := c.Sum(context.Background(), &pb.SumRequest{
+	// 	Num1: 10,
+	// 	Num2: 3,
+	// })
+	// if err != nil {
+	// 	log.Fatalf("Could not sum: %v\n", err)
+	// }
+
+	// log.Printf("Sum: %d\n", res.Ans)
+
+	res, err := c.Primes(context.Background(), &pb.PrimesRequest{
+		Num: 120,
 	})
+
 	if err != nil {
-		log.Fatalf("Could not sum: %v\n", err)
+		log.Fatalf("Could not primes: %v\n", err)
 	}
 
-	log.Printf("Sum: %d\n", res.Ans)
+	for {
+		ans, err := res.Recv()
+
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Could not primes: %v\n", err)
+		}
+
+		log.Println(ans)
+	}
 }
