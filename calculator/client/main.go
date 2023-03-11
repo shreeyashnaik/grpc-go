@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"io"
 	"log"
+	"time"
 
 	pb "github.com/shreeyashnaik/grpc-go/calculator/proto"
 	"google.golang.org/grpc"
@@ -29,27 +29,47 @@ func main() {
 	// if err != nil {
 	// 	log.Fatalf("Could not sum: %v\n", err)
 	// }
-
 	// log.Printf("Sum: %d\n", res.Ans)
 
-	res, err := c.Primes(context.Background(), &pb.PrimesRequest{
-		Num: 120,
-	})
+	// res, err := c.Primes(context.Background(), &pb.PrimesRequest{
+	// 	Num: 120,
+	// })
+	// if err != nil {
+	// 	log.Fatalf("Could not primes: %v\n", err)
+	// }
+	// for {
+	// 	ans, err := res.Recv()
 
+	// 	if err == io.EOF {
+	// 		break
+	// 	}
+	// 	if err != nil {
+	// 		log.Fatalf("Could not primes: %v\n", err)
+	// 	}
+
+	// 	log.Println(ans)
+	// }
+
+	reqs := []*pb.AvgRequest{
+		{Num: 1},
+		{Num: 2},
+		{Num: 4},
+	}
+	stream, err := c.Avg(context.Background())
 	if err != nil {
-		log.Fatalf("Could not primes: %v\n", err)
+		log.Fatalf("Could not avg: %v\n", err)
 	}
 
-	for {
-		ans, err := res.Recv()
-
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatalf("Could not primes: %v\n", err)
-		}
-
-		log.Println(ans)
+	for _, req := range reqs {
+		log.Printf("Sending req: %v", req)
+		stream.Send(req)
+		time.Sleep(time.Second)
 	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("Could not avg: %v\n", err)
+	}
+
+	log.Println("Avg: ", res.Avg)
 }
