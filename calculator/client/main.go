@@ -23,60 +23,73 @@ func main() {
 
 	c := pb.NewCalculatorClient(conn)
 
-	/* UNARY STREAMING */
-	// res, err := c.Sum(context.Background(), &pb.SumRequest{
-	// 	Num1: 10,
-	// 	Num2: 3,
-	// })
-	// if err != nil {
-	// 	log.Fatalf("Could not sum: %v\n", err)
-	// }
-	// log.Printf("Sum: %d\n", res.Ans)
+	doSum(c)
+	doPrimes(c)
+	doAvg(c)
+	doMax(c)
+}
 
-	/* SERVER STREAMING */
-	// res, err := c.Primes(context.Background(), &pb.PrimesRequest{
-	// 	Num: 120,
-	// })
-	// if err != nil {
-	// 	log.Fatalf("Could not primes: %v\n", err)
-	// }
-	// for {
-	// 	ans, err := res.Recv()
+/* UNARY STREAMING */
+func doSum(c pb.CalculatorClient) {
+	res, err := c.Sum(context.Background(), &pb.SumRequest{
+		Num1: 10,
+		Num2: 3,
+	})
+	if err != nil {
+		log.Fatalf("Could not sum: %v\n", err)
+	}
+	log.Printf("Sum: %d\n", res.Ans)
+}
 
-	// 	if err == io.EOF {
-	// 		break
-	// 	}
-	// 	if err != nil {
-	// 		log.Fatalf("Could not primes: %v\n", err)
-	// 	}
+/* SERVER STREAMING */
+func doPrimes(c pb.CalculatorClient) {
+	res, err := c.Primes(context.Background(), &pb.PrimesRequest{
+		Num: 120,
+	})
+	if err != nil {
+		log.Fatalf("Could not primes: %v\n", err)
+	}
+	for {
+		ans, err := res.Recv()
 
-	// 	log.Println(ans)
-	// }
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Could not primes: %v\n", err)
+		}
 
-	/* CLIENT STREAMING */
-	// reqs := []*pb.AvgRequest{
-	// 	{Num: 1},
-	// 	{Num: 2},
-	// 	{Num: 4},
-	// }
-	// stream, err := c.Avg(context.Background())
-	// if err != nil {
-	// 	log.Fatalf("Could not avg: %v\n", err)
-	// }
+		log.Println(ans)
+	}
+}
 
-	// for _, req := range reqs {
-	// 	log.Printf("Sending req: %v", req)
-	// 	stream.Send(req)
-	// 	time.Sleep(time.Second)
-	// }
+/* CLIENT STREAMING */
+func doAvg(c pb.CalculatorClient) {
+	reqs := []*pb.AvgRequest{
+		{Num: 1},
+		{Num: 2},
+		{Num: 4},
+	}
+	stream, err := c.Avg(context.Background())
+	if err != nil {
+		log.Fatalf("Could not avg: %v\n", err)
+	}
 
-	// res, err := stream.CloseAndRecv()
-	// if err != nil {
-	// 	log.Fatalf("Could not avg: %v\n", err)
-	// }
-	// log.Println("Avg: ", res.Avg)
+	for _, req := range reqs {
+		log.Printf("Sending req: %v", req)
+		stream.Send(req)
+		time.Sleep(time.Second)
+	}
 
-	/* BI-DIRECTIONAL STREAMING */
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("Could not avg: %v\n", err)
+	}
+	log.Println("Avg: ", res.Avg)
+}
+
+/* BI-DIRECTIONAL STREAMING */
+func doMax(c pb.CalculatorClient) {
 	reqs := []*pb.MaxRequest{
 		{Num: 10},
 		{Num: 2},
