@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"time"
 
@@ -22,6 +23,7 @@ func main() {
 
 	c := pb.NewCalculatorClient(conn)
 
+	/* UNARY STREAMING */
 	// res, err := c.Sum(context.Background(), &pb.SumRequest{
 	// 	Num1: 10,
 	// 	Num2: 3,
@@ -31,6 +33,7 @@ func main() {
 	// }
 	// log.Printf("Sum: %d\n", res.Ans)
 
+	/* SERVER STREAMING */
 	// res, err := c.Primes(context.Background(), &pb.PrimesRequest{
 	// 	Num: 120,
 	// })
@@ -50,26 +53,69 @@ func main() {
 	// 	log.Println(ans)
 	// }
 
-	reqs := []*pb.AvgRequest{
-		{Num: 1},
+	/* CLIENT STREAMING */
+	// reqs := []*pb.AvgRequest{
+	// 	{Num: 1},
+	// 	{Num: 2},
+	// 	{Num: 4},
+	// }
+	// stream, err := c.Avg(context.Background())
+	// if err != nil {
+	// 	log.Fatalf("Could not avg: %v\n", err)
+	// }
+
+	// for _, req := range reqs {
+	// 	log.Printf("Sending req: %v", req)
+	// 	stream.Send(req)
+	// 	time.Sleep(time.Second)
+	// }
+
+	// res, err := stream.CloseAndRecv()
+	// if err != nil {
+	// 	log.Fatalf("Could not avg: %v\n", err)
+	// }
+	// log.Println("Avg: ", res.Avg)
+
+	/* BI-DIRECTIONAL STREAMING */
+	reqs := []*pb.MaxRequest{
+		{Num: 10},
 		{Num: 2},
-		{Num: 4},
+		{Num: 14},
+		{Num: 12},
+		{Num: 21},
 	}
-	stream, err := c.Avg(context.Background())
+
+	stream, err := c.Max(context.Background())
 	if err != nil {
-		log.Fatalf("Could not avg: %v\n", err)
+		log.Fatalf("Error while creating client stream: %v\n", err)
 	}
 
-	for _, req := range reqs {
-		log.Printf("Sending req: %v", req)
-		stream.Send(req)
-		time.Sleep(time.Second)
-	}
+	waitc := make(chan struct{})
+	go func() {
+		for _, req := range reqs {
+			log.Printf("Send request: %v\n", req)
+			stream.Send(req)
+			time.Sleep(time.Second)
+		}
+		stream.CloseSend()
+	}()
 
-	res, err := stream.CloseAndRecv()
-	if err != nil {
-		log.Fatalf("Could not avg: %v\n", err)
-	}
+	go func() {
+		for {
+			res, err := stream.Recv()
 
-	log.Println("Avg: ", res.Avg)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Printf("Error while receiving: %v\n", err)
+			}
+
+			log.Printf("Received: %v\n", res.Max)
+		}
+
+		close(waitc)
+	}()
+
+	<-waitc
 }
