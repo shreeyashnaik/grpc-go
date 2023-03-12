@@ -89,13 +89,15 @@ func (s *Server) Max(stream pb.Calculator_MaxServer) error {
 			log.Fatalf("Error while reading client stream: %v\n", err)
 		}
 
-		res := math.Max(float64(req.Num), float64(currMax))
-		currMax = int32(res)
+		currNum := req.Num
 
-		if err := stream.Send(&pb.MaxResponse{
-			Max: int32(res),
-		}); err != nil {
-			log.Fatalf("Error while sending data to client, %v", err)
+		if currNum > currMax {
+			currMax = currNum
+			if err := stream.Send(&pb.MaxResponse{
+				Max: currMax,
+			}); err != nil {
+				log.Fatalf("Error while sending data to client, %v", err)
+			}
 		}
 	}
 }

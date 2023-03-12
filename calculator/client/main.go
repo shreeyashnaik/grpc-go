@@ -111,7 +111,7 @@ func main() {
 				log.Printf("Error while receiving: %v\n", err)
 			}
 
-			log.Printf("Received: %v\n", res.Max)
+			log.Printf("Received new max: %v\n", res.Max)
 		}
 
 		close(waitc)
