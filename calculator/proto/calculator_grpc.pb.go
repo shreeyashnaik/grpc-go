@@ -23,6 +23,7 @@ const (
 	Calculator_Primes_FullMethodName = "/calculator.Calculator/Primes"
 	Calculator_Avg_FullMethodName    = "/calculator.Calculator/Avg"
 	Calculator_Max_FullMethodName    = "/calculator.Calculator/Max"
+	Calculator_Sqrt_FullMethodName   = "/calculator.Calculator/Sqrt"
 )
 
 // CalculatorClient is the client API for Calculator service.
@@ -33,6 +34,7 @@ type CalculatorClient interface {
 	Primes(ctx context.Context, in *PrimesRequest, opts ...grpc.CallOption) (Calculator_PrimesClient, error)
 	Avg(ctx context.Context, opts ...grpc.CallOption) (Calculator_AvgClient, error)
 	Max(ctx context.Context, opts ...grpc.CallOption) (Calculator_MaxClient, error)
+	Sqrt(ctx context.Context, in *SqrtRequest, opts ...grpc.CallOption) (*SqrtResponse, error)
 }
 
 type calculatorClient struct {
@@ -149,6 +151,15 @@ func (x *calculatorMaxClient) Recv() (*MaxResponse, error) {
 	return m, nil
 }
 
+func (c *calculatorClient) Sqrt(ctx context.Context, in *SqrtRequest, opts ...grpc.CallOption) (*SqrtResponse, error) {
+	out := new(SqrtResponse)
+	err := c.cc.Invoke(ctx, Calculator_Sqrt_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CalculatorServer is the server API for Calculator service.
 // All implementations must embed UnimplementedCalculatorServer
 // for forward compatibility
@@ -157,6 +168,7 @@ type CalculatorServer interface {
 	Primes(*PrimesRequest, Calculator_PrimesServer) error
 	Avg(Calculator_AvgServer) error
 	Max(Calculator_MaxServer) error
+	Sqrt(context.Context, *SqrtRequest) (*SqrtResponse, error)
 	mustEmbedUnimplementedCalculatorServer()
 }
 
@@ -175,6 +187,9 @@ func (UnimplementedCalculatorServer) Avg(Calculator_AvgServer) error {
 }
 func (UnimplementedCalculatorServer) Max(Calculator_MaxServer) error {
 	return status.Errorf(codes.Unimplemented, "method Max not implemented")
+}
+func (UnimplementedCalculatorServer) Sqrt(context.Context, *SqrtRequest) (*SqrtResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Sqrt not implemented")
 }
 func (UnimplementedCalculatorServer) mustEmbedUnimplementedCalculatorServer() {}
 
@@ -280,6 +295,24 @@ func (x *calculatorMaxServer) Recv() (*MaxRequest, error) {
 	return m, nil
 }
 
+func _Calculator_Sqrt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SqrtRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CalculatorServer).Sqrt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Calculator_Sqrt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CalculatorServer).Sqrt(ctx, req.(*SqrtRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Calculator_ServiceDesc is the grpc.ServiceDesc for Calculator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -290,6 +323,10 @@ var Calculator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Sum",
 			Handler:    _Calculator_Sum_Handler,
+		},
+		{
+			MethodName: "Sqrt",
+			Handler:    _Calculator_Sqrt_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

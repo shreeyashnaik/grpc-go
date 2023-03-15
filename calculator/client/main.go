@@ -8,7 +8,9 @@ import (
 
 	pb "github.com/shreeyashnaik/grpc-go/calculator/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 var addr string = "0.0.0.0:50052"
@@ -23,10 +25,12 @@ func main() {
 
 	c := pb.NewCalculatorClient(conn)
 
-	doSum(c)
-	doPrimes(c)
-	doAvg(c)
-	doMax(c)
+	// doSum(c)
+	// doPrimes(c)
+	// doAvg(c)
+	// doMax(c)
+	doSqrt(c, 10)
+	doSqrt(c, -2)
 }
 
 /* UNARY STREAMING */
@@ -131,4 +135,26 @@ func doMax(c pb.CalculatorClient) {
 	}()
 
 	<-waitc
+}
+
+func doSqrt(c pb.CalculatorClient, n int32) {
+	log.Println("doSqrt func was invoked!")
+	res, err := c.Sqrt(context.Background(), &pb.SqrtRequest{Num: n})
+	if err != nil {
+		e, ok := status.FromError(err)
+
+		if ok {
+			log.Printf("Error message from server: %s\n", e.Message())
+			log.Printf("Error message from server: %d\n", e.Code())
+
+			if e.Code() == codes.InvalidArgument {
+				log.Println("Probably, a -ve number passed")
+				return
+			}
+		} else {
+			log.Fatalf("A NON-GRPC error: %v\n", err)
+		}
+	}
+
+	log.Printf("Sqrt: %v\n", res.Sqrt)
 }

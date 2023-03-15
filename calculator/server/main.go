@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"math"
@@ -9,6 +10,8 @@ import (
 
 	pb "github.com/shreeyashnaik/grpc-go/calculator/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var addr string = "0.0.0.0:50052"
@@ -20,7 +23,7 @@ type Server struct {
 func main() {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatalln("Unable to listen")
+		log.Fatalf("Unable to listen: %v\n", err)
 	}
 
 	s := grpc.NewServer()
@@ -100,4 +103,20 @@ func (s *Server) Max(stream pb.Calculator_MaxServer) error {
 			}
 		}
 	}
+}
+
+func (s *Server) Sqrt(ctx context.Context, in *pb.SqrtRequest) (*pb.SqrtResponse, error) {
+	log.Printf("Sqrt func was invoked with value: %v\n", in)
+
+	number := in.Num
+	if number < 0 {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Received a negative number: %d", number),
+		)
+	}
+
+	return &pb.SqrtResponse{
+		Sqrt: float32(math.Sqrt(float64(number))),
+	}, nil
 }
